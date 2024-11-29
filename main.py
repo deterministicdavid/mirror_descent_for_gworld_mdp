@@ -14,6 +14,87 @@ from mirror_descent import policy_mirror_midpoint_stepping_semi_implicit
 from mirror_descent import policy_mirror_RK4_stepping
 from mirror_descent import policy_mirror_stepping_exponential_integrator
 
+
+def error_plot1(x_vals, y1, reverse_x_axis=False,x_label='x label',y_label='y label',title='title',name_prefix='plot',show_plot=False,legend1='-'):
+    """
+    Plot the errors for two different methods (e.g. mirror and mid-point)
+    against a range of grid sizes.
+
+    Parameters:
+        x_vals (list): List of grid size values.
+        y1 (list): List of error values for method 1 (e.g. mirror).
+        y2 (list): List of error values for method 2 (e.g. mid-point).
+    """
+    plt.figure(figsize=(8,6))
+
+    # Plot the errors for the two methods
+    plt.plot(x_vals, np.log(y1), label=legend1, marker='o')
+    
+    # Add title and labels
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    if reverse_x_axis:
+        # Reverse the x-axis
+        ax = plt.gca()
+        ax.invert_xaxis()
+
+    # Add legend
+    plt.legend()
+
+    # Save the plot as a PDF
+    date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{name_prefix}_{date_time}.pdf"
+    print(f"Saving plot to {filename}")
+    plt.savefig(filename)
+
+    # Show the plot
+    if show_plot: 
+        plt.show()
+
+
+def error_plot3(x_vals, y1, y2, y3, reverse_x_axis=False,x_label='x label',y_label='y label',title='title',name_prefix='plot',show_plot=False,legend1='-',legend2='-',legend3='-'):
+    """
+    Plot the errors for two different methods (e.g. mirror and mid-point)
+    against a range of grid sizes.
+
+    Parameters:
+        x_vals (list): List of grid size values.
+        y1 (list): List of error values for method 1 (e.g. mirror).
+        y2 (list): List of error values for method 2 (e.g. mid-point).
+    """
+    plt.figure(figsize=(8,6))
+
+    # Plot the errors for the two methods
+    plt.plot(x_vals, np.log(y1), label=legend1, marker='o')
+    plt.plot(x_vals, np.log(y2), label=legend2, marker='s')
+    plt.plot(x_vals, np.log(y3), label=legend3, marker='s')
+
+    # Add title and labels
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    if reverse_x_axis:
+        # Reverse the x-axis
+        ax = plt.gca()
+        ax.invert_xaxis()
+
+    # Add legend
+    plt.legend()
+
+    # Save the plot as a PDF
+    date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{name_prefix}_{date_time}.pdf"
+    print(f"Saving plot to {filename}")
+    plt.savefig(filename)
+
+    # Show the plot
+    if show_plot: 
+        plt.show()
+
+
 def error_plot2(x_vals, y1, y2, reverse_x_axis=False,x_label='x label',y_label='y label',title='title',name_prefix='plot',show_plot=False,legend1='-',legend2='-'):
     """
     Plot the errors for two different methods (e.g. mirror and mid-point)
@@ -898,10 +979,63 @@ def experiment9():
     plot_heatmap_of_errors_vs_gw_size_and_num_steps(numsteps=numsteps, gw_grid_sizes=gw_grid_sizes, errors=log_errors_wrt_grid_size_np, name_prefix='experiment9_hm')
     plot_3d_of_errors_vs_gw_size_and_num_steps(numsteps=numsteps, gw_grid_sizes=gw_grid_sizes, errors=log_errors_wrt_grid_size_np, name_prefix='experiment9_3d')
 
-if __name__ == "__main__":
-    figure1a()
-    figure1b()
-    figure2a()
-    figure2b()
+
+
+def figure2a_only_mirror_and_midpt():
+    # Setup the mdp
+    gamma=0.80
+    mdp = GridworldMDP(grid_size=11, gamma=gamma)
+
+    # Set the temperature parameter for softmax
+    tau = 1e-1
+
+    # Run policy iteration with softmax to get the reference policy and value
+    _, V_ref = log_policy_iteration_softmax(mdp, tau=tau)
     
 
+    h_mirror = 4
+    
+    T_max_vals = [4,8,12,20,32,40,52,60,72,80]
+    
+    # Set up some strings we'll use later for producing the plot
+    # plot_title = f'Error plot with gamma={gamma}, tau={tau}, h={h_mirror} for mirror and h={h_midpoint} for midpoint'
+    plot_title = ''
+    
+    V_fn_errors_mirror_linf = []
+    V_fn_errors_midpt_linf = []
+    
+    for i in range(0, len(T_max_vals)):
+        T_max=T_max_vals[i]
+
+        # Run mirror stepping
+        _, V_mirror = policy_mirror_stepping(mdp, tau=tau, h=h_mirror, grad_time_T=T_max)
+        V_fn_errors_mirror_linf.append(np.max(np.abs(V_ref - V_mirror)))
+        print(f'l infty error for mirror stepping: {V_fn_errors_mirror_linf[-1]}')
+        
+        _, V_mirror_midpt = policy_mirror_midpoint_stepping(mdp, tau=tau, h=h_mirror*2, grad_time_T=T_max)
+        V_fn_errors_midpt_linf.append(np.max(np.abs(V_ref - V_mirror_midpt)))
+        print(f'l infty for mirror midpoint stepping: {V_fn_errors_midpt_linf[-1]}')
+
+        
+    error_plot2(np.array(T_max_vals)/h_mirror, 
+               V_fn_errors_mirror_linf, 
+               V_fn_errors_midpt_linf,
+               reverse_x_axis=False,
+               x_label='Number of iterations',
+               y_label='log error',
+               title = plot_title,
+               name_prefix='figure_2a_mirror_and_mid',
+               legend1='1st order',
+               legend2='2nd order'
+               )
+
+
+
+
+if __name__ == "__main__":
+    # figure1a()
+    # figure1b()
+    # figure2a()
+    # figure2b()
+    
+    figure2a_only_mirror_and_midpt()
