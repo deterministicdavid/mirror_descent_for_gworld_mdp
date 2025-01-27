@@ -63,7 +63,50 @@ class GridworldMDP:
                         slip_index = self.state_to_index(slip_state)
                         P[current_index, a, slip_index] += slip_prob
 
+        P = self.__normalize_transition_probabilities(P)
+        self.__validate_transition_probabilities(P)
         return P
+    
+    def __normalize_transition_probabilities(self, P):
+        for state in self.states:
+            for a, action in enumerate(self.actions):
+                p_from_state_given_a_to_any_state = 0.0
+                for next_state in self.states:
+                    #sum_probs = sum(self.P[(state, a, next_state)] for next_state in self.states)
+                    current_state_index = self.state_to_index(state)
+                    next_state_index = self.state_to_index(next_state)
+                    p = P[current_state_index,a,next_state_index]
+                    p_from_state_given_a_to_any_state += p
+                
+                # ok - so now we have the sum and we re-scale all
+                if p_from_state_given_a_to_any_state <= 1e-12:
+                    raise ValueError(f"Transition probabilities for state {state} and action {action} sum to 0. Can't even rescale.")
+                
+                for next_state in self.states:
+                    current_state_index = self.state_to_index(state)
+                    next_state_index = self.state_to_index(next_state)
+                    p = P[current_state_index,a,next_state_index]
+                    p_rescaled = p/p_from_state_given_a_to_any_state 
+                    P[current_state_index,a,next_state_index] = p_rescaled
+        
+        return P
+
+    def __validate_transition_probabilities(self, P):
+        for state in self.states:
+            for a, action in enumerate(self.actions):
+                p_from_state_given_a_to_any_state = 0.0
+                for next_state in self.states:
+                    #sum_probs = sum(self.P[(state, a, next_state)] for next_state in self.states)
+                    current_state_index = self.state_to_index(state)
+                    next_state_index = self.state_to_index(next_state)
+                    p = P[current_state_index,a,next_state_index]
+                    p_from_state_given_a_to_any_state += p
+                if not (0.999 <= p_from_state_given_a_to_any_state <= 1.001):
+                    # raise ValueError(f"Transition probabilities for state {state} and action {action} do not sum to 1. They sum to {sum_probs}.")
+                    print(f"P({state}, {action}, . ) sum up to {p_from_state_given_a_to_any_state}, not 1.")
+                
+        print("MDP girdworld - validating transition probability matrix - OK.")
+
 
     def __build_C(self, step_cost = 0.1, target_cost = -2, trap_cost = 2, randomize=0.0):
         C = np.full((self.num_states, self.num_actions), step_cost)
@@ -212,3 +255,10 @@ class GridworldMDP:
             # Layout so plots and color bars do not overlap
             fig.tight_layout()
             plt.show()
+
+
+
+if __name__ == "__main__":
+    # setup the MDP
+    mdp = GridworldMDP(grid_size=11, gamma=0.95)
+    

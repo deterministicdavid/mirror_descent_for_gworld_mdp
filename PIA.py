@@ -108,7 +108,7 @@ if __name__ == "__main__":
     test_policy_evaluation()
     
     # setup the MDP
-    mdp = GridworldMDP(grid_size=11, gamma=0.8)
+    mdp = GridworldMDP(grid_size=11, gamma=0.99)
     
     # run policy iteration on strict policies
     optimal_policy, V = policy_iteration(mdp)
